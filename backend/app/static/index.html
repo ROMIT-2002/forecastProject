@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ForecastIQ AI - Paid Ads Forecasting & Decision Engine</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f5f5f7;
+      color: #1d1d1f;
+    }
+    /* Apple card class */
+    .apple-card {
+      background: #ffffff;
+      border-radius: 18px;
+      border: 1px solid #e8e8ed;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.01);
+      transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.2s ease;
+    }
+    .apple-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+    }
+    .apple-glass {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    /* Hide scrollbars */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex text-[#1d1d1f]">
+
+  <!-- LOGIN CONTAINER -->
+  <div id="login-container" class="fixed inset-0 bg-[#f5f5f7] z-50 flex items-center justify-center">
+    <div class="w-full max-w-[400px] p-8 bg-white border border-[#e8e8ed] rounded-[24px] shadow-sm">
+      <div class="flex flex-col items-center mb-8">
+        <div class="w-12 h-12 rounded-2xl bg-[#1d1d1f] flex items-center justify-center text-white text-xl font-bold tracking-tight shadow-md">
+          FI
+        </div>
+        <h1 class="mt-4 text-2xl font-semibold tracking-tight">ForecastIQ AI</h1>
+        <p class="mt-1.5 text-sm text-[#86868b]">SaaS Ads Optimization Engine</p>
+      </div>
+
+      <form id="login-form" class="space-y-5">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">Email address</label>
+          <input
+            id="login-email"
+            type="email"
+            placeholder="name@company.com"
+            required
+            value="demo@forecastiq.ai"
+            class="w-full px-4 py-3 bg-[#f5f5f7] border border-transparent rounded-2xl text-sm focus:outline-none focus:bg-white focus:border-[#d2d2d7] transition-all duration-200"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">Your Persona Role</label>
+          <select
+            id="login-role"
+            class="w-full px-4 py-3 bg-[#f5f5f7] border border-transparent rounded-2xl text-sm focus:outline-none focus:bg-white focus:border-[#d2d2d7] transition-all duration-200 appearance-none"
+          >
+            <option value="SEM Manager">SEM Manager</option>
+            <option value="Media Executive">Media Executive</option>
+            <option value="Analyst">Analyst</option>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full py-3 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white text-sm font-semibold rounded-2xl shadow-sm transition-all duration-200 mt-2"
+        >
+          Continue
+        </button>
+      </form>
+      <p class="mt-6 text-center text-xs text-[#86868b]">Demo Mode: Press continue to load the app.</p>
+    </div>
+  </div>
+
+  <!-- APP CONTAINER -->
+  <div id="app-container" class="hidden flex-1 flex min-h-screen">
+    
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-white border-r border-[#e8e8ed] flex flex-col justify-between p-6 h-screen sticky top-0">
+      <div>
+        <!-- Logo -->
+        <div class="flex items-center space-x-3 mb-8 px-2">
+          <div class="w-8 h-8 rounded-xl bg-[#1d1d1f] flex items-center justify-center text-white text-sm font-bold shadow-sm">
+            FI
+          </div>
+          <span class="font-semibold text-base tracking-tight text-[#1d1d1f]">ForecastIQ AI</span>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="space-y-1">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-3 py-2.5 bg-[#f5f5f7] text-[#1d1d1f] rounded-2xl text-sm font-medium transition-all">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+            <span>Overview</span>
+          </button>
+          <button onclick="switchTab('upload')" id="nav-upload" class="w-full flex items-center space-x-3 px-3 py-2.5 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]/50 rounded-2xl text-sm font-medium transition-all">
+            <i data-lucide="upload" class="w-4 h-4"></i>
+            <span>Upload CSV</span>
+          </button>
+          <button onclick="switchTab('campaigns')" id="nav-campaigns" class="w-full flex items-center space-x-3 px-3 py-2.5 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]/50 rounded-2xl text-sm font-medium transition-all">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+            <span>Campaigns</span>
+          </button>
+          <button onclick="switchTab('forecasting')" id="nav-forecasting" class="w-full flex items-center space-x-3 px-3 py-2.5 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]/50 rounded-2xl text-sm font-medium transition-all">
+            <i data-lucide="trending-up" class="w-4 h-4"></i>
+            <span>Forecasting</span>
+          </button>
+          <button onclick="switchTab('recommendations')" id="nav-recommendations" class="w-full flex items-center space-x-3 px-3 py-2.5 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]/50 rounded-2xl text-sm font-medium transition-all">
+            <i data-lucide="lightbulb" class="w-4 h-4"></i>
+            <span>Recommendations</span>
+          </button>
+          <button onclick="switchTab('simulator')" id="nav-simulator" class="w-full flex items-center space-x-3 px-3 py-2.5 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]/50 rounded-2xl text-sm font-medium transition-all">
+            <i data-lucide="play" class="w-4 h-4"></i>
+            <span>Scenario Simulator</span>
+          </button>
+          <button onclick="switchTab('anomalies')" id="nav-anomalies" class="w-full flex items-center space-x-3 px-3 py-2.5 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]/50 rounded-2xl text-sm font-medium transition-all">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            <span>Anomaly Center</span>
+          </button>
+          <button onclick="switchTab('reports')" id="nav-reports" class="w-full flex items-center space-x-3 px-3 py-2.5 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]/50 rounded-2xl text-sm font-medium transition-all">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+            <span>Executive Summary</span>
+          </button>
+          <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center space-x-3 px-3 py-2.5 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]/50 rounded-2xl text-sm font-medium transition-all">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span>Settings</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- User Profile -->
+      <div class="border-t border-[#e8e8ed] pt-4 px-2">
+        <p id="user-email-display" class="text-xs font-semibold text-[#1d1d1f] truncate">demo@forecastiq.ai</p>
+        <span id="user-role-display" class="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold">SEM Manager</span>
+      </div>
+    </aside>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="flex-1 p-10 overflow-y-auto max-h-screen no-scrollbar">
+
+      <!-- VIEW: DASHBOARD OVERVIEW -->
+      <div id="view-dashboard" class="tab-view space-y-8">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-semibold tracking-tight text-[#1d1d1f]">Portfolio Overview</h1>
+            <p class="text-sm text-[#86868b] mt-1">Holistic multi-channel performance tracking & predictions.</p>
+          </div>
+          <button onclick="switchTab('upload')" class="flex items-center space-x-2 px-4 py-2.5 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white text-xs font-semibold rounded-2xl shadow-sm transition-all">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+            <span>Upload New Data</span>
+          </button>
+        </div>
+
+        <!-- KPI Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="apple-card p-6">
+            <span class="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Total Spend</span>
+            <div id="kpi-spend" class="mt-2 text-2xl font-bold tracking-tight">$0.00</div>
+            <p class="mt-1 text-xs text-[#86868b]">Aggregated media cost</p>
+          </div>
+          <div class="apple-card p-6">
+            <span class="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Total Revenue</span>
+            <div id="kpi-revenue" class="mt-2 text-2xl font-bold tracking-tight">$0.00</div>
+            <p id="kpi-roas" class="mt-1 text-xs text-[#86868b]">ROAS: 0.00x</p>
+          </div>
+          <div class="apple-card p-6">
+            <span class="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Conversions</span>
+            <div id="kpi-conversions" class="mt-2 text-2xl font-bold tracking-tight">0</div>
+            <p id="kpi-cvr" class="mt-1 text-xs text-[#86868b]">CVR: 0.0%</p>
+          </div>
+          <div class="apple-card p-6">
+            <span class="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Cost Per Acquisition</span>
+            <div id="kpi-cpa" class="mt-2 text-2xl font-bold tracking-tight">$0.00</div>
+            <p class="mt-1 text-xs text-[#86868b]">Portfolio CPA average</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Main Chart -->
+          <div class="lg:col-span-2 apple-card p-6">
+            <h3 class="text-base font-semibold tracking-tight mb-4">Spend & Conversion Efficiency Trends</h3>
+            <div class="h-64 relative">
+              <canvas id="dashboard-chart"></canvas>
+            </div>
+          </div>
+          <!-- Right widget -->
+          <div class="space-y-8">
+            <div class="apple-card p-6">
+              <h3 class="text-base font-semibold tracking-tight mb-4">Top Recommendations</h3>
+              <div id="dashboard-recs" class="space-y-4">
+                <p class="text-xs text-[#86868b]">No recommendation triggers active. Upload data first.</p>
+              </div>
+            </div>
+            <div class="apple-card p-6">
+              <h3 class="text-base font-semibold tracking-tight mb-4">System Alerts</h3>
+              <div id="dashboard-anomalies" class="space-y-4">
+                <p class="text-xs text-[#86868b]">No metrics anomalies detected.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: UPLOAD -->
+      <div id="view-upload" class="tab-view hidden space-y-8">
+        <div>
+          <h1 class="text-3xl font-semibold tracking-tight">Data Ingestion</h1>
+          <p class="text-sm text-[#86868b] mt-1">Upload daily campaign records to run forecast cycles.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div class="apple-card p-8">
+            <h3 class="text-base font-semibold tracking-tight mb-4">Ingest Performance Log CSV</h3>
+            
+            <form id="upload-form" class="space-y-6">
+              <div class="border-2 border-dashed border-[#e8e8ed] hover:border-[#d2d2d7] rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-[#f5f5f7]/50 hover:bg-white transition relative">
+                <input 
+                  id="csv-file-input"
+                  type="file" 
+                  accept=".csv" 
+                  required
+                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onchange="onFileSelected(this)"
+                />
+                <div class="w-12 h-12 rounded-2xl bg-white border border-[#e8e8ed] flex items-center justify-center text-[#6e6e73] mb-4 shadow-sm">
+                  <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+                </div>
+                <div id="file-picker-text">
+                  <p class="text-sm font-semibold">Click to choose file or drag here</p>
+                  <p class="text-xs text-[#86868b] mt-1">Accepts standard metrics CSV logs</p>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="w-full py-3 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white text-sm font-semibold rounded-2xl shadow-sm transition flex items-center justify-center space-x-2"
+              >
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                <span>Upload Performance Data</span>
+              </button>
+            </form>
+          </div>
+
+          <div class="apple-card p-8 space-y-6">
+            <h3 class="text-base font-semibold tracking-tight">Data Quality Log Verification</h3>
+            <div id="upload-report-placeholder" class="text-center text-[#86868b] py-8">
+              <i data-lucide="shield-check" class="w-10 h-10 stroke-1 mx-auto mb-3"></i>
+              <p class="text-sm">Upload a dataset to run validation scans.</p>
+            </div>
+            <div id="upload-report" class="hidden space-y-4">
+              <div class="flex justify-between items-center py-2 border-b border-[#f5f5f7]">
+                <span class="text-sm text-[#6e6e73]">Total Records Ingested</span>
+                <span id="rep-total" class="text-sm font-bold">0</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b border-[#f5f5f7]">
+                <span class="text-sm text-[#6e6e73]">Duplicate Rows Cleaned</span>
+                <span id="rep-dups" class="text-sm font-semibold text-[#1d1d1f]">0</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b border-[#f5f5f7]">
+                <span class="text-sm text-[#6e6e73]">Missing Dates Resolved</span>
+                <span id="rep-dates" class="text-sm font-semibold">0</span>
+              </div>
+              <div class="flex justify-between items-center py-2">
+                <span class="text-sm text-[#6e6e73]">Zero Cost Rows Filtered</span>
+                <span id="rep-cost" class="text-sm font-semibold">0</span>
+              </div>
+              <div class="p-4 bg-green-50 rounded-2xl text-xs text-green-700 font-medium">
+                Analysis Pipeline Completed: Base KPIs derived successfully. Dynamic optimization models refreshed.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: CAMPAIGNS -->
+      <div id="view-campaigns" class="tab-view hidden space-y-8">
+        <div>
+          <h1 class="text-3xl font-semibold tracking-tight">Campaign Performance</h1>
+          <p class="text-sm text-[#86868b] mt-1">Granular breakdown of channel metrics, cost efficiencies, and conversion ROAS.</p>
+        </div>
+
+        <div class="apple-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b border-[#e8e8ed] bg-[#f5f5f7]/50 text-[#86868b]">
+                  <th class="p-4 font-semibold">Campaign</th>
+                  <th className="p-4 font-semibold">Channel</th>
+                  <th class="p-4 font-semibold text-right">Spend</th>
+                  <th class="p-4 font-semibold text-right">Impressions</th>
+                  <th class="p-4 font-semibold text-right">Clicks</th>
+                  <th class="p-4 font-semibold text-right">CPC</th>
+                  <th class="p-4 font-semibold text-right">Conversions</th>
+                  <th class="p-4 font-semibold text-right">CPA</th>
+                  <th class="p-4 font-semibold text-right">ROAS</th>
+                </tr>
+              </thead>
+              <tbody id="campaigns-table-body">
+                <tr>
+                  <td colspan="9" class="p-8 text-center text-[#86868b]">
+                    No campaign data available. Upload a CSV to view performance details.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: FORECASTING -->
+      <div id="view-forecasting" class="tab-view hidden space-y-8">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-semibold tracking-tight">Predictive Forecasting</h1>
+            <p class="text-sm text-[#86868b] mt-1">Multi-horizon seasonal projections for key digital advertising metrics.</p>
+          </div>
+          <div class="flex space-x-3">
+            <select id="forecast-campaign-select" class="px-4 py-2.5 bg-white border border-[#e8e8ed] rounded-2xl text-xs font-semibold focus:outline-none" onchange="loadForecasts()"></select>
+            <select id="forecast-metric-select" class="px-4 py-2.5 bg-white border border-[#e8e8ed] rounded-2xl text-xs font-semibold focus:outline-none" onchange="loadForecasts()">
+              <option value="cost">Spend ($)</option>
+              <option value="conversions">Conversions</option>
+              <option value="revenue">Revenue ($)</option>
+              <option value="cpa">CPA ($)</option>
+              <option value="roas">ROAS (x)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="apple-card p-6">
+          <h3 class="text-base font-semibold tracking-tight mb-4">Actual vs. Forecasted Trend</h3>
+          <div class="h-80 relative">
+            <canvas id="forecast-chart"></canvas>
+          </div>
+        </div>
+
+        <div class="apple-card p-6">
+          <h3 class="text-base font-semibold tracking-tight mb-4">Forecast Projections Log</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b border-[#e8e8ed] text-[#86868b]">
+                  <th class="pb-3">Date</th>
+                  <th class="pb-3 text-right">Lower Bound</th>
+                  <th class="pb-3 text-right">Predicted Value</th>
+                  <th class="pb-3 text-right">Upper Bound</th>
+                </tr>
+              </thead>
+              <tbody id="forecast-table-body">
+                <tr>
+                  <td colspan="4" class="py-4 text-center text-[#86868b]">No predictions generated.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: RECOMMENDATIONS -->
+      <div id="view-recommendations" class="tab-view hidden space-y-8">
+        <div>
+          <h1 class="text-3xl font-semibold tracking-tight">Optimization Insights</h1>
+          <p class="text-sm text-[#86868b] mt-1">Algorithmic suggestions to maximize ROAS efficiency and stop campaign spend waste.</p>
+        </div>
+
+        <div id="recs-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <p class="text-sm text-[#86868b]">No recommendations currently triggered.</p>
+        </div>
+      </div>
+
+      <!-- VIEW: SIMULATOR -->
+      <div id="view-simulator" class="tab-view hidden space-y-8">
+        <div>
+          <h1 class="text-3xl font-semibold tracking-tight">Scenario Simulator</h1>
+          <p class="text-sm text-[#86868b] mt-1">Simulate budget reallocations and calculate marginal efficiency curves under diminishing returns.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div class="apple-card p-8 h-fit">
+            <h3 class="text-base font-semibold tracking-tight mb-6">Simulation Settings</h3>
+            
+            <form id="sim-form" class="space-y-6">
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">Target Campaign</label>
+                <select id="sim-campaign-select" class="w-full px-4 py-3 bg-[#f5f5f7] border border-transparent rounded-2xl text-sm focus:outline-none focus:bg-white focus:border-[#d2d2d7]">
+                  <option value="All Campaigns">All Campaigns</option>
+                </select>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-2">
+                  <span>Budget Adjustment</span>
+                  <span id="sim-slider-label" class="text-[#1d1d1f] font-bold">+10%</span>
+                </div>
+                <input
+                  id="sim-budget-slider"
+                  type="range"
+                  min="-50"
+                  max="50"
+                  step="5"
+                  value="10"
+                  class="w-full h-1 bg-[#e8e8ed] rounded-lg appearance-none cursor-pointer accent-[#1d1d1f]"
+                  oninput="document.getElementById('sim-slider-label').innerText = (this.value > 0 ? '+' : '') + this.value + '%'"
+                />
+                <div class="flex justify-between text-[10px] text-[#86868b] mt-2 font-medium">
+                  <span>Scale Down -50%</span>
+                  <span>Baseline 0%</span>
+                  <span>Scale Up +50%</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="w-full py-3 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white text-sm font-semibold rounded-2xl shadow-sm transition flex items-center justify-center space-x-2"
+              >
+                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                <span>Run Simulation</span>
+              </button>
+            </form>
+          </div>
+
+          <div class="lg:col-span-2 space-y-6">
+            <div id="sim-results-empty" class="border border-[#e8e8ed] rounded-3xl p-10 flex flex-col items-center justify-center text-center text-[#86868b] min-h-[350px]">
+              <i data-lucide="trending-up" class="w-10 h-10 stroke-1 mb-3 text-[#d2d2d7]"></i>
+              <p class="text-sm font-semibold">Ready to model budget scenarios</p>
+              <p class="text-xs text-[#86868b] mt-1">Select parameters in the settings panel and click Run Simulation.</p>
+            </div>
+
+            <div id="sim-results" class="hidden space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="apple-card p-6">
+                  <span class="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider">Projected Spend</span>
+                  <div id="sim-spend" class="mt-2 text-xl font-bold tracking-tight">$0.00</div>
+                </div>
+                <div class="apple-card p-6">
+                  <span class="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider">Projected Conversions</span>
+                  <div id="sim-convs" class="mt-2 text-xl font-bold tracking-tight">0</div>
+                </div>
+                <div class="apple-card p-6">
+                  <span class="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider">Projected Revenue</span>
+                  <div id="sim-rev" class="mt-2 text-xl font-bold tracking-tight text-green-600">$0.00</div>
+                </div>
+                <div class="apple-card p-6">
+                  <span class="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider">Projected CPA</span>
+                  <div id="sim-cpa" class="mt-2 text-xl font-bold tracking-tight">$0.00</div>
+                </div>
+                <div class="apple-card p-6">
+                  <span class="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider">Projected ROAS</span>
+                  <div id="sim-roas" class="mt-2 text-xl font-bold tracking-tight">0.0x</div>
+                </div>
+              </div>
+
+              <div class="apple-card p-6">
+                <h4 class="text-sm font-semibold mb-2">Pacing Explanation</h4>
+                <p id="sim-desc" class="text-xs text-[#6e6e73] leading-relaxed"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: ANOMALIES -->
+      <div id="view-anomalies" class="tab-view hidden space-y-8">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-semibold tracking-tight">Anomaly Center</h1>
+            <p class="text-sm text-[#86868b] mt-1">Real-time tracking of statistical metric variances and spending outliers.</p>
+          </div>
+          <button onclick="scanAnomalies()" class="flex items-center space-x-2 px-4 py-2.5 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white text-xs font-semibold rounded-2xl shadow-sm transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Scan Performance Logs</span>
+          </button>
+        </div>
+
+        <div id="anomalies-list" class="space-y-6">
+          <p class="text-sm text-[#86868b]">No outliers or Z-score anomalies currently flagged.</p>
+        </div>
+      </div>
+
+      <!-- VIEW: REPORTS -->
+      <div id="view-reports" class="tab-view hidden space-y-8">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-semibold tracking-tight">Executive Insights</h1>
+            <p class="text-sm text-[#86868b] mt-1">Plain-English performance reports synthesized from latest campaign stats, anomaly alerts, and forecast models.</p>
+          </div>
+          <div class="flex space-x-3">
+            <button onclick="generateReport()" class="flex items-center space-x-2 px-4 py-2.5 bg-white border border-[#e8e8ed] hover:bg-[#f5f5f7] text-[#1d1d1f] text-xs font-semibold rounded-2xl shadow-sm transition">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500"></i>
+              <span>Regenerate Report</span>
+            </button>
+            <button onclick="exportReport()" class="flex items-center space-x-2 px-4 py-2.5 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white text-xs font-semibold rounded-2xl shadow-sm transition">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Export Markdown</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="report-view-content" class="max-w-3xl space-y-8">
+          <p class="text-sm text-[#86868b]">Report loading...</p>
+        </div>
+      </div>
+
+      <!-- VIEW: SETTINGS -->
+      <div id="view-settings" class="tab-view hidden space-y-8">
+        <div>
+          <h1 class="text-3xl font-semibold tracking-tight">Settings & Automations</h1>
+          <p class="text-sm text-[#86868b] mt-1">Configure target ROI benchmarks and inspect background automation agents.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div class="space-y-8 lg:col-span-1">
+            <div class="apple-card p-6">
+              <h3 class="text-base font-semibold tracking-tight mb-4 flex items-center">
+                <i data-lucide="settings" class="w-4 h-4 mr-2"></i>
+                <span>Optimization Targets</span>
+              </h3>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">Target ROAS (x)</label>
+                  <input id="settings-roas" type="number" step="0.1" value="2.0" class="w-full px-4 py-3 bg-[#f5f5f7] border border-transparent rounded-2xl text-sm focus:outline-none focus:bg-white focus:border-[#d2d2d7]"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-1.5">Target CPA ($)</label>
+                  <input id="settings-cpa" type="number" step="1" value="30.0" class="w-full px-4 py-3 bg-[#f5f5f7] border border-transparent rounded-2xl text-sm focus:outline-none focus:bg-white focus:border-[#d2d2d7]"/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-2 space-y-8">
+            <div class="apple-card p-6">
+              <h3 class="text-base font-semibold tracking-tight mb-6 flex items-center">
+                <i data-lucide="cpu" class="w-4.5 h-4.5 mr-2 text-blue-500"></i>
+                <span>In-App Automation Agents</span>
+              </h3>
+              <div id="agents-list" class="space-y-4">
+                <p class="text-sm text-[#86868b]">Loading agents registry...</p>
+              </div>
+            </div>
+
+            <div class="apple-card p-6">
+              <h3 class="text-base font-semibold tracking-tight mb-4">Automation Audit Logs</h3>
+              <div id="agent-logs-list" class="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                <p class="text-xs text-[#86868b]">No logs found.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MAIN SCRIPT -->
+  <script>
+    let activeTab = 'dashboard';
+    let loadedSummary = null;
+    let dashboardChart = null;
+    let forecastChart = null;
+    let currentReport = null;
+
+    // Initialize lucide icons
+    lucide.createIcons();
+
+    // Login logic
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const role = document.getElementById('login-role').value;
+      
+      localStorage.setItem('user_email', email);
+      localStorage.setItem('user_role', role);
+      
+      document.getElementById('user-email-display').innerText = email;
+      document.getElementById('user-role-display').innerText = role;
+      
+      document.getElementById('login-container').classList.add('hidden');
+      document.getElementById('app-container').classList.remove('hidden');
+      
+      // Load app data
+      loadDashboardData();
+    });
+
+    // Tab Switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(view => view.classList.add('hidden'));
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+      
+      document.querySelectorAll('aside nav button').forEach(btn => {
+        btn.className = "w-full flex items-center space-x-3 px-3 py-2.5 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]/50 rounded-2xl text-sm font-medium transition-all";
+      });
+      document.getElementById('nav-' + tabId).className = "w-full flex items-center space-x-3 px-3 py-2.5 bg-[#f5f5f7] text-[#1d1d1f] rounded-2xl text-sm font-medium transition-all";
+      
+      activeTab = tabId;
+      
+      // Trigger API fetch for selected tab
+      if (tabId === 'dashboard') loadDashboardData();
+      else if (tabId === 'campaigns') loadCampaignsData();
+      else if (tabId === 'forecasting') loadForecastingData();
+      else if (tabId === 'recommendations') loadRecommendationsData();
+      else if (tabId === 'simulator') loadSimulatorData();
+      else if (tabId === 'anomalies') loadAnomaliesData();
+      else if (tabId === 'reports') loadReportData();
+      else if (tabId === 'settings') loadSettingsData();
+    }
+
+    // API calls & Data loaders
+    async function loadDashboardData() {
+      try {
+        const res = await fetch('/api/dashboard/summary');
+        const summary = await res.json();
+        loadedSummary = summary;
+        
+        document.getElementById('kpi-spend').innerText = '$' + summary.total_spend.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('kpi-revenue').innerText = '$' + summary.total_revenue.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('kpi-roas').innerText = 'ROAS: ' + summary.roas.toFixed(2) + 'x';
+        document.getElementById('kpi-conversions').innerText = summary.total_conversions.toLocaleString();
+        document.getElementById('kpi-cvr').innerText = 'CVR: ' + (summary.cvr * 100).toFixed(1) + '%';
+        document.getElementById('kpi-cpa').innerText = '$' + summary.cpa.toFixed(2);
+        
+        // Render chart
+        renderDashboardChart();
+        loadDashboardWidgets();
+      } catch (err) {
+        console.error("Dashboard API error:", err);
+      }
+    }
+
+    async function loadDashboardWidgets() {
+      // Recommendations
+      try {
+        const res = await fetch('/api/recommendations');
+        const recs = await res.json();
+        const container = document.getElementById('dashboard-recs');
+        if (recs.length > 0) {
+          container.innerHTML = recs.slice(0, 2).map(r => `
+            <div class="p-3 bg-[#f5f5f7] rounded-xl flex items-start space-x-2">
+              <i data-lucide="lightbulb" class="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0"></i>
+              <div>
+                <h4 class="text-xs font-semibold text-[#1d1d1f]">${r.title}</h4>
+                <p class="text-[10px] text-[#6e6e73] truncate max-w-[180px]">${r.campaign_name}</p>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `<p class="text-xs text-[#86868b]">No recommendations triggered yet.</p>`;
+        }
+        
+        // Anomalies
+        const aRes = await fetch('/api/anomalies');
+        const anomalies = await aRes.json();
+        const aContainer = document.getElementById('dashboard-anomalies');
+        if (anomalies.length > 0) {
+          aContainer.innerHTML = anomalies.slice(0, 2).map(a => `
+            <div class="p-3 bg-red-50 rounded-xl flex items-start space-x-2">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0"></i>
+              <div>
+                <h4 class="text-xs font-semibold text-red-600">CPC Spike Detected</h4>
+                <p class="text-[10px] text-[#6e6e73] truncate max-w-[180px]">${a.campaign_name}</p>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          aContainer.innerHTML = `<p class="text-xs text-[#86868b]">No active anomaly alerts.</p>`;
+        }
+        lucide.createIcons();
+      } catch (err) {}
+    }
+
+    async function loadCampaignsData() {
+      try {
+        const res = await fetch('/api/campaigns');
+        const campaigns = await res.json();
+        const tbody = document.getElementById('campaigns-table-body');
+        if (campaigns.length > 0) {
+          tbody.innerHTML = campaigns.map(c => `
+            <tr class="border-b border-[#f5f5f7] hover:bg-[#f5f5f7]/30 transition">
+              <td class="p-4 font-semibold text-[#1d1d1f] truncate max-w-[180px]">${c.campaign_name}</td>
+              <td class="p-4 text-[#6e6e73]">${c.channel}</td>
+              <td class="p-4 text-right font-medium">$${c.cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+              <td class="p-4 text-right text-[#6e6e73]">${c.impressions.toLocaleString()}</td>
+              <td class="p-4 text-right text-[#6e6e73]">${c.clicks.toLocaleString()}</td>
+              <td class="p-4 text-right text-[#6e6e73]">$${c.cpc.toFixed(2)}</td>
+              <td class="p-4 text-right font-medium">${c.conversions.toLocaleString()}</td>
+              <td class="p-4 text-right text-[#6e6e73]">$${c.cpa.toFixed(2)}</td>
+              <td class="p-4 text-right font-bold ${c.roas >= 2.0 ? 'text-green-600' : 'text-[#1d1d1f]'}">${c.roas.toFixed(2)}x</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-[#86868b]">No campaign records found. Upload a CSV.</td></tr>`;
+        }
+      } catch (err) {}
+    }
+
+    // Ingest Upload
+    function onFileSelected(input) {
+      if (input.files && input.files[0]) {
+        document.getElementById('file-picker-text').innerHTML = `
+          <p class="text-sm font-semibold text-[#1d1d1f]">${input.files[0].name}</p>
+          <p class="text-xs text-[#86868b] mt-1">${(input.files[0].size / 1024).toFixed(1)} KB</p>
+        `;
+      }
+    }
+
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('csv-file-input');
+      if (!input.files || input.files.length === 0) return;
+      
+      const formData = new FormData();
+      formData.append("file", input.files[0]);
+      
+      try {
+        const res = await fetch('/api/upload', {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('upload-report-placeholder').classList.add('hidden');
+          const reportDiv = document.getElementById('upload-report');
+          reportDiv.classList.remove('hidden');
+          
+          document.getElementById('rep-total').innerText = data.rows_processed;
+          document.getElementById('rep-dups').innerText = data.data_quality_report.duplicates_removed;
+          document.getElementById('rep-dates').innerText = data.data_quality_report.missing_dates;
+          document.getElementById('rep-cost').innerText = data.data_quality_report.zero_cost_rows;
+        } else {
+          alert("Upload error: " + data.detail);
+        }
+      } catch (err) {
+        alert("Upload error: " + err.message);
+      }
+    });
+
+    // Forecasting
+    async function loadForecastingData() {
+      try {
+        const cRes = await fetch('/api/campaigns');
+        const campaigns = await cRes.json();
+        const select = document.getElementById('forecast-campaign-select');
+        
+        const prevVal = select.value;
+        const uniqueNames = Array.from(new Set(campaigns.map(c => c.campaign_name)));
+        
+        if (uniqueNames.length > 0) {
+          select.innerHTML = uniqueNames.map(name => `<option value="${name}">${name}</option>`).join('');
+          if (uniqueNames.includes(prevVal)) select.value = prevVal;
+          else select.value = uniqueNames[0];
+        }
+        
+        loadForecasts();
+      } catch (err) {}
+    }
+
+    async function loadForecasts() {
+      const camp = document.getElementById('forecast-campaign-select').value;
+      const metric = document.getElementById('forecast-metric-select').value;
+      if (!camp) return;
+
+      try {
+        const res = await fetch(`/api/forecast?campaign_name=${encodeURIComponent(camp)}&metric=${metric}`);
+        const forecasts = await res.json();
+        
+        const tbody = document.getElementById('forecast-table-body');
+        if (forecasts.length > 0) {
+          tbody.innerHTML = forecasts.map(f => `
+            <tr class="border-b border-[#f5f5f7] hover:bg-[#f5f5f7]/30 transition">
+              <td class="py-3 font-medium text-[#1d1d1f]">${f.forecast_date}</td>
+              <td class="py-3 text-right text-[#6e6e73]">${f.lower_bound ? '$' + f.lower_bound.toFixed(2) : '-'}</td>
+              <td class="py-3 text-right font-bold text-[#1d1d1f]">${f.predicted_value ? '$' + f.predicted_value.toFixed(2) : '-'}</td>
+              <td class="py-3 text-right text-[#6e6e73]">${f.upper_bound ? '$' + f.upper_bound.toFixed(2) : '-'}</td>
+            </tr>
+          `).join('');
+          
+          renderForecastChart(forecasts, metric);
+        } else {
+          tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-[#86868b]">No predictions available. Refresh forecast first.</td></tr>`;
+        }
+      } catch (err) {}
+    }
+
+    // Recommendations Page
+    async function loadRecommendationsData() {
+      try {
+        const res = await fetch('/api/recommendations');
+        const recs = await res.json();
+        const grid = document.getElementById('recs-grid');
+        
+        if (recs.length > 0) {
+          grid.innerHTML = recs.map(r => `
+            <div class="apple-card p-6 flex flex-col justify-between border ${r.priority === 'critical' ? 'border-red-100 bg-red-50/10' : 'border-[#e8e8ed]'} ${r.status !== 'new' ? 'opacity-40' : ''}">
+              <div>
+                <div class="flex justify-between items-start mb-4">
+                  <span class="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider">${r.campaign_name}</span>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${r.priority === 'critical' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}">${r.priority}</span>
+                </div>
+                <h3 class="text-base font-semibold tracking-tight text-[#1d1d1f]">${r.title}</h3>
+                <p class="text-xs text-[#6e6e73] mt-2 leading-relaxed">${r.description}</p>
+                <div class="mt-4 p-3 bg-[#f5f5f7] rounded-xl text-xs">
+                  <span class="font-semibold text-[#6e6e73]">Expected Impact:</span> ${r.expected_impact || '-'}
+                </div>
+                <div class="mt-2 text-xs font-medium">
+                  <span class="text-[#86868b]">Suggested Action:</span> ${r.action || '-'}
+                </div>
+              </div>
+              
+              <div class="mt-6 pt-4 border-t border-[#f5f5f7] flex justify-end space-x-3">
+                ${r.status === 'new' ? `
+                  <button onclick="applyRecommendation(${r.id}, 'dismissed')" class="px-3.5 py-2 hover:bg-[#f5f5f7] text-[#86868b] text-xs font-semibold rounded-xl border border-[#e8e8ed] flex items-center space-x-1">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    <span>Dismiss</span>
+                  </button>
+                  <button onclick="applyRecommendation(${r.id}, 'accepted')" class="px-3.5 py-2 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white text-xs font-semibold rounded-xl flex items-center space-x-1">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    <span>Apply</span>
+                  </button>
+                ` : `<span class="text-xs font-semibold text-[#86868b] capitalize">Status: ${r.status}</span>`}
+              </div>
+            </div>
+          `).join('');
+          lucide.createIcons();
+        } else {
+          grid.innerHTML = `<p class="text-sm text-[#86868b]">No active recommendations generated.</p>`;
+        }
+      } catch (err) {}
+    }
+
+    async function applyRecommendation(id, status) {
+      try {
+        const res = await fetch(`/api/recommendations/${id}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status })
+        });
+        if (res.ok) {
+          loadRecommendationsData();
+        }
+      } catch (err) {}
+    }
+
+    // Simulator
+    async function loadSimulatorData() {
+      try {
+        const res = await fetch('/api/campaigns');
+        const campaigns = await res.json();
+        const select = document.getElementById('sim-campaign-select');
+        const uniqueNames = Array.from(new Set(campaigns.map(c => c.campaign_name)));
+        
+        select.innerHTML = '<option value="All Campaigns">All Campaigns</option>' + 
+          uniqueNames.map(name => `<option value="${name}">${name}</option>`).join('');
+      } catch (err) {}
+    }
+
+    document.getElementById('sim-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pct = parseFloat(document.getElementById('sim-budget-slider').value);
+      const camp = document.getElementById('sim-campaign-select').value;
+      
+      try {
+        const res = await fetch('/api/simulations/run', {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ budget_change_percentage: pct, campaign_name: camp })
+        });
+        const data = await res.json();
+        
+        document.getElementById('sim-results-empty').classList.add('hidden');
+        const resultsDiv = document.getElementById('sim-results');
+        resultsDiv.classList.remove('hidden');
+        
+        document.getElementById('sim-spend').innerText = '$' + data.projected_spend.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('sim-convs').innerText = data.projected_conversions.toLocaleString();
+        document.getElementById('sim-rev').innerText = '$' + data.projected_revenue.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('sim-cpa').innerText = '$' + data.projected_cpa.toFixed(2);
+        document.getElementById('sim-roas').innerText = data.projected_roas.toFixed(2) + 'x';
+        document.getElementById('sim-desc').innerText = data.explanation;
+      } catch (err) {}
+    });
+
+    // Anomalies
+    async function loadAnomaliesData() {
+      try {
+        const res = await fetch('/api/anomalies');
+        const anomalies = await res.json();
+        const list = document.getElementById('anomalies-list');
+        
+        if (anomalies.length > 0) {
+          list.innerHTML = anomalies.map(a => `
+            <div class="apple-card p-6 flex flex-col md:flex-row md:items-center justify-between border ${a.severity === 'critical' ? 'border-red-100 bg-red-50/10' : 'border-[#e8e8ed]'}">
+              <div class="flex items-start space-x-4">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 ${a.severity === 'critical' ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-600'}">
+                  <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="flex items-center space-x-3">
+                    <h4 class="text-sm font-bold text-[#1d1d1f]">${a.campaign_name}</h4>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${a.severity === 'critical' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}">${a.severity}</span>
+                  </div>
+                  <p class="text-xs text-[#6e6e73] mt-1.5 leading-relaxed">${a.explanation}</p>
+                  <div class="flex items-center space-x-4 mt-3 text-[11px] text-[#86868b] font-medium">
+                    <span>Date: ${a.anomaly_date}</span>
+                    <span>•</span>
+                    <span>Metric: <span class="uppercase text-[#1d1d1f] font-semibold">${a.metric}</span></span>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-4 md:mt-0 flex items-center space-x-6 text-right flex-shrink-0">
+                <div>
+                  <span class="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider">Actual</span>
+                  <p class="text-sm font-bold text-[#1d1d1f] mt-0.5">$${a.actual_value.toFixed(2)}</p>
+                </div>
+                <div>
+                  <span class="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider">Expected</span>
+                  <p class="text-sm font-bold text-green-600 mt-0.5">$${a.expected_value.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          `).join('');
+          lucide.createIcons();
+        } else {
+          list.innerHTML = `<p class="text-sm text-[#86868b]">No active anomaly alerts detected.</p>`;
+        }
+      } catch (err) {}
+    }
+
+    async function scanAnomalies() {
+      try {
+        await fetch('/api/anomalies/detect', { method: "POST" });
+        loadAnomaliesData();
+      } catch (err) {}
+    }
+
+    // Reports
+    async function loadReportData() {
+      try {
+        const res = await fetch('/api/reports/executive', { method: "POST" });
+        const report = await res.json();
+        currentReport = report;
+        
+        const container = document.getElementById('report-view-content');
+        container.innerHTML = `
+          <div class="apple-card p-8">
+            <h3 class="text-xs font-bold text-[#86868b] uppercase tracking-wider mb-2">Performance Summary</h3>
+            <p class="text-sm text-[#1d1d1f] leading-relaxed font-medium">${report.performance_summary}</p>
+          </div>
+          <div class="apple-card p-8">
+            <h3 class="text-xs font-bold text-[#86868b] uppercase tracking-wider mb-2">Forecast Outlook</h3>
+            <p class="text-sm text-[#1d1d1f] leading-relaxed">${report.forecast_summary}</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="apple-card p-8 border border-red-100 bg-red-50/10">
+              <h3 class="text-xs font-bold text-red-600 uppercase tracking-wider mb-2">Risks & Anomalies</h3>
+              <p class="text-xs text-[#6e6e73] leading-relaxed whitespace-pre-line">${report.risks}</p>
+            </div>
+            <div class="apple-card p-8 border border-green-100 bg-green-50/10">
+              <h3 class="text-xs font-bold text-green-600 uppercase tracking-wider mb-2">Opportunities</h3>
+              <p class="text-xs text-[#6e6e73] leading-relaxed whitespace-pre-line">${report.opportunities}</p>
+            </div>
+          </div>
+          <div class="apple-card p-8">
+            <h3 class="text-xs font-bold text-[#86868b] uppercase tracking-wider mb-3">Action Plan</h3>
+            <p class="text-xs text-[#1d1d1f] leading-relaxed whitespace-pre-line font-medium">${report.action_plan}</p>
+          </div>
+          <div class="apple-card p-8 border border-blue-100 bg-blue-50/10">
+            <h3 class="text-xs font-bold text-blue-600 tracking-wider uppercase mb-2">Projected Impact</h3>
+            <p class="text-sm text-[#1d1d1f] leading-relaxed font-semibold">${report.business_impact}</p>
+          </div>
+        `;
+      } catch (err) {}
+    }
+
+    async function generateReport() {
+      loadReportData();
+    }
+
+    function exportReport() {
+      if (!currentReport) return;
+      const content = `
+# ForecastIQ AI - Executive Summary Report
+Generated on: ${new Date().toLocaleDateString()}
+
+## 1. Performance Overview
+${currentReport.performance_summary}
+
+## 2. Projections & Forecasts
+${currentReport.forecast_summary}
+
+## 3. Key Portfolio Risks
+${currentReport.risks}
+
+## 4. Scaling Opportunities
+${currentReport.opportunities}
+
+## 5. Action Plan
+${currentReport.action_plan}
+
+## 6. Business Impact
+${currentReport.business_impact}
+      `;
+      const blob = new Blob([content], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "forecastiq_executive_report.md";
+      link.click();
+    }
+
+    // Settings
+    async function loadSettingsData() {
+      try {
+        const res = await fetch('/api/agents');
+        const agents = await res.json();
+        
+        const container = document.getElementById('agents-list');
+        if (agents.length > 0) {
+          container.innerHTML = agents.map(a => `
+            <div class="p-4 bg-[#f5f5f7] rounded-2xl flex items-center justify-between border border-[#e8e8ed]/60">
+              <div>
+                <h4 class="text-xs font-bold text-[#1d1d1f]">${a.name}</h4>
+                <p class="text-[11px] text-[#6e6e73] mt-1">${a.description}</p>
+              </div>
+              <button onclick="runAgent('${a.name}')" class="px-3 py-1.5 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white text-[10px] font-semibold rounded-xl flex items-center space-x-1">
+                <i data-lucide="play" class="w-2.5 h-2.5 fill-current"></i>
+                <span>Run Agent</span>
+              </button>
+            </div>
+          `).join('');
+          lucide.createIcons();
+        }
+        
+        loadAgentLogs();
+      } catch (err) {}
+    }
+
+    async function runAgent(name) {
+      try {
+        await fetch(`/api/agents/run/${encodeURIComponent(name)}`, { method: "POST" });
+        loadAgentLogs();
+      } catch (err) {}
+    }
+
+    async function loadAgentLogs() {
+      try {
+        const res = await fetch('/api/agents/logs');
+        const logs = await res.json();
+        const container = document.getElementById('agent-logs-list');
+        if (logs.length > 0) {
+          container.innerHTML = logs.map(l => `
+            <div class="p-4 bg-[#f5f5f7]/60 rounded-xl text-xs space-y-1.5 border border-[#e8e8ed]/30">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-[#1d1d1f]">${l.agent_name}</span>
+                <span class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[8px] font-bold uppercase">${l.status}</span>
+              </div>
+              <p class="text-[#6e6e73]">${l.summary}</p>
+              <p class="text-[9px] text-[#86868b]">${new Date(l.started_at).toLocaleString()}</p>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `<p class="text-xs text-[#86868b]">No logs found.</p>`;
+        }
+      } catch (err) {}
+    }
+
+    // Chart rendering functions
+    function renderDashboardChart() {
+      const ctx = document.getElementById('dashboard-chart').getContext('2d');
+      if (dashboardChart) dashboardChart.destroy();
+      
+      dashboardChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Mar 10', 'Mar 25', 'Apr 10', 'Apr 25', 'May 10', 'May 25', 'Jun 8'],
+          datasets: [{
+            label: 'Spend ($)',
+            data: [12000, 15000, 16500, 19200, 21000, 23500, 24500],
+            borderColor: '#1d1d1f',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.35
+          }, {
+            label: 'Revenue ($)',
+            data: [22000, 28000, 31000, 37000, 42000, 46000, 48200],
+            borderColor: '#34c759',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.35
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { boxWidth: 12, font: { family: 'Inter', size: 11 } }
+            }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#f5f5f7' } }
+          }
+        }
+      });
+    }
+
+    function renderForecastChart(forecasts, metric) {
+      const ctx = document.getElementById('forecast-chart').getContext('2d');
+      if (forecastChart) forecastChart.destroy();
+      
+      const labels = forecasts.map(f => f.forecast_date.split('-').slice(1).join('/'));
+      const predicted = forecasts.map(f => f.predicted_value);
+      const lower = forecasts.map(f => f.lower_bound);
+      const upper = forecasts.map(f => f.upper_bound);
+
+      forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Predicted',
+              data: predicted,
+              borderColor: '#0066cc',
+              backgroundColor: 'rgba(0, 102, 204, 0.05)',
+              borderWidth: 2,
+              pointRadius: 1,
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'Upper Limit',
+              data: upper,
+              borderColor: '#e8e8ed',
+              borderDash: [5, 5],
+              pointRadius: 0,
+              fill: false
+            },
+            {
+              label: 'Lower Limit',
+              data: lower,
+              borderColor: '#e8e8ed',
+              borderDash: [5, 5],
+              pointRadius: 0,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'top' }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#f5f5f7' } }
+          }
+        }
+      });
+    }
+
+  </script>
+</body>
+</html>
