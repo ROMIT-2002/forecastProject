@@ -7,6 +7,7 @@ import { Upload, CheckCircle, AlertCircle, FileSpreadsheet } from "lucide-react"
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadStep, setUploadStep] = useState(0);
   const [report, setReport] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,11 +24,22 @@ export default function UploadPage() {
     if (!file) return;
 
     setUploading(true);
+    setUploadStep(0);
     setError(null);
     setReport(null);
 
+    // Dynamic processing steps animations
+    const stepsInterval = setInterval(() => {
+      setUploadStep((prev) => {
+        if (prev < 3) return prev + 1;
+        return prev;
+      });
+    }, 600);
+
     const formData = new FormData();
     formData.append("file", file);
+
+    const startTime = Date.now();
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/upload`, {
@@ -36,6 +48,16 @@ export default function UploadPage() {
       });
 
       const data = await res.json();
+      
+      // Ensure the cleaning animation runs for at least 2.4s for visual excellence
+      const elapsed = Date.now() - startTime;
+      const minDuration = 2400;
+      if (elapsed < minDuration) {
+        await new Promise((resolve) => setTimeout(resolve, minDuration - elapsed));
+      }
+
+      clearInterval(stepsInterval);
+
       if (res.ok) {
         setReport(data.data_quality_report);
       } else {
@@ -43,18 +65,16 @@ export default function UploadPage() {
       }
     } catch (err) {
       // Offline fallback demo simulator
-      setTimeout(() => {
-        setReport({
-          missing_dates: 0,
-          duplicates_removed: 1,
-          bad_values_fixed: 0,
-          zero_cost_rows: 3,
-          invalid_campaigns_skipped: 0,
-          total_rows_ingested: 90
-        });
-        setUploading(false);
-      }, 1500);
-      return;
+      await new Promise((resolve) => setTimeout(resolve, 2400));
+      clearInterval(stepsInterval);
+      setReport({
+        missing_dates: 0,
+        duplicates_removed: 1,
+        bad_values_fixed: 0,
+        zero_cost_rows: 3,
+        invalid_campaigns_skipped: 0,
+        total_rows_ingested: 90
+      });
     }
     setUploading(false);
   };
@@ -118,7 +138,38 @@ export default function UploadPage() {
 
           {/* Report card */}
           <div>
-            {report ? (
+            {uploading ? (
+              <div className="apple-card p-8 space-y-6 flex flex-col justify-center min-h-[350px]">
+                <div className="flex flex-col items-center justify-center text-center space-y-4">
+                  {/* Minimalist Apple spinner */}
+                  <div className="w-8 h-8 border-[2.5px] border-transparent border-t-[#1d1d1f] border-r-[#1d1d1f] rounded-full animate-spin"></div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-[#1d1d1f]">Verifying Ingestion Pipeline</h4>
+                    <p className="text-xs text-[#86868b] mt-1">Parsing logs and cleaning campaign records...</p>
+                  </div>
+                </div>
+
+                {/* Processing Steps list */}
+                <div className="space-y-3.5 pt-4 border-t border-[#f5f5f7]">
+                  <div className="flex items-center space-x-3 text-xs font-semibold">
+                    <div className={`w-2 h-2 rounded-full ${uploadStep >= 0 ? "bg-[#1d1d1f] animate-pulse" : "bg-[#d2d2d7]"}`}></div>
+                    <span className={uploadStep >= 0 ? "text-[#1d1d1f]" : "text-[#86868b]"}>Reading uploaded logs CSV</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-xs font-semibold">
+                    <div className={`w-2 h-2 rounded-full ${uploadStep >= 1 ? "bg-[#1d1d1f] animate-pulse" : "bg-[#d2d2d7]"}`}></div>
+                    <span className={uploadStep >= 1 ? "text-[#1d1d1f]" : "text-[#86868b]"}>Removing duplicates & resolving dates</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-xs font-semibold">
+                    <div className={`w-2 h-2 rounded-full ${uploadStep >= 2 ? "bg-[#1d1d1f] animate-pulse" : "bg-[#d2d2d7]"}`}></div>
+                    <span className={uploadStep >= 2 ? "text-[#1d1d1f]" : "text-[#86868b]"}>Calculating derived KPI fields (ROAS, CPA)</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-xs font-semibold">
+                    <div className={`w-2 h-2 rounded-full ${uploadStep >= 3 ? "bg-[#1d1d1f] animate-pulse" : "bg-[#d2d2d7]"}`}></div>
+                    <span className={uploadStep >= 3 ? "text-[#1d1d1f]" : "text-[#86868b]"}>Updating prediction intervals & anomaly logs</span>
+                  </div>
+                </div>
+              </div>
+            ) : report ? (
               <div className="apple-card p-8 space-y-6">
                 <div className="flex items-center space-x-3 text-apple-green">
                   <CheckCircle className="w-6 h-6" />
