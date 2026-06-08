@@ -96,11 +96,13 @@ def generate_deterministic_summary(db: Session, account_id: int) -> dict:
     # Action Plan
     action_items = []
     if critical_anom:
-        action_items.append("1. Audit bids and placements on campaigns flagged with CPC/CPA spikes.")
+        action_items.append("Audit bids and placements on campaigns flagged with CPC/CPA spikes.")
     if high_recs:
-        action_items.append("2. Implement budget scaling recommendations for positive-ROI campaigns.")
-    action_items.append("3. Review low-performing keywords and story creative variations experiencing ad fatigue.")
-    action_plan_text = "\n".join(action_items)
+        action_items.append("Implement budget scaling recommendations for positive-ROI campaigns.")
+    action_items.append("Review low-performing keywords and story creative variations experiencing ad fatigue.")
+    
+    # Dynamically format with 1-based numbering
+    action_plan_text = "\n".join(f"{idx+1}. {item}" for idx, item in enumerate(action_items))
 
     # Business impact calculation
     # Assume implementing positive suggestions yields a 10% lift in revenue
