@@ -9,7 +9,11 @@ from app.models.database_models import User, Account, CampaignPerformance, Forec
 from app.schemas.api_schemas import (
     DashboardSummary, CampaignSummaryRow, CampaignPerformanceResponse, ForecastResponse,
     RecommendationResponse, RecommendationUpdate, AnomalyResponse, SimulationRequest,
-    SimulationResponse, AgentInfo, AgentRunResponse, AgentRunLogResponse, ExecutiveReportResponse
+    SimulationResponse, AgentInfo, AgentRunResponse, AgentRunLogResponse, ExecutiveReportResponse,
+    SemSummaryResponse, SemCampaignDiminishingReturns, SemIncrementalBudgetRequest,
+    SemIncrementalBudgetResponse, SemSqrResponse, SemNegativeKeywordsResponse,
+    SemBidRecommendation, SemImpressionShareResponse, SemPortfolioOptimizeRequest,
+    SemPortfolioOptimizeResponse, SemCampaignEfficiency
 )
 
 from app.services.data_quality import validate_and_clean_csv, save_campaign_performance
@@ -19,6 +23,18 @@ from app.services.anomaly_detection import detect_anomalies
 from app.services.simulation import run_budget_simulation
 from app.services.ai_summary import generate_executive_summary_report
 from app.services.agents import AGENTS_REGISTRY
+
+# SEM Intelligence Service imports
+from app.services.sem_metrics import (
+    calculate_cpi, calculate_estimated_value, calculate_estimated_profit, calculate_spend_efficiency
+)
+from app.services.diminishing_returns import get_campaign_diminishing_returns
+from app.services.sqr_analysis import analyze_sqr
+from app.services.negative_keywords import get_negative_keyword_recommendations
+from app.services.incremental_budget import allocate_incremental_budget
+from app.services.bid_optimization import generate_bid_recommendations
+from app.services.impression_share import analyze_impression_share
+from app.services.portfolio_optimizer import optimize_portfolio_budget
 
 router = APIRouter()
 
@@ -271,3 +287,167 @@ def get_executive_report(db: Session = Depends(get_db)):
     account_id = get_default_account_id(db)
     report_data = generate_executive_summary_report(db, account_id)
     return report_data
+
+# ==========================================
+# SEM INTELLIGENCE LAYER ENDPOINTS
+# ==========================================
+
+@router.get("/sem/summary", response_model=SemSummaryResponse)
+def get_sem_summary(db: Session = Depends(get_db)):
+    account_id = get_default_account_id(db)
+    records = db.query(CampaignPerformance).filter(CampaignPerformance.account_id == account_id).all()
+    
+    if not records:
+        return SemSummaryResponse(
+            estimated_cpi=0.0, estimated_value=0.0, marginal_cpa=0.0, incremental_roas=0.0,
+            diminishing_return_status="Healthy", wasted_spend=0.0, estimated_savings=0.0, budget_opportunity=0.0
+        )
+        
+    campaign_names = list(set(r.campaign_name for r in records))
+    
+    # Calculate SQR waste details
+    sqr_res = analyze_sqr(db, account_id)
+    wasted = sqr_res["total_wasted_spend"]
+    savings = sqr_res["estimated_savings"]
+    
+    # Compute campaign efficiency metrics
+    total_installs = sum(r.installs for r in records if r.installs is not None)
+    total_cost = sum(r.cost for r in records)
+    total_convs = sum(r.conversions for r in records)
+    
+    # Aggregated CPI
+    overall_cpi = calculate_cpi(total_cost, total_installs)
+    
+    # Estimated Value sum
+    overall_value = 0.0
+    for r in records:
+        ltv = r.estimated_ltv if (r.estimated_ltv is not None) else r.conversion_value
+        overall_value += calculate_estimated_value(r.conversions, ltv, r.conversion_value, r.revenue)
+
+    # Average diminishing return statistics
+    dim_status = "Healthy"
+    marginal_cpa_sum = 0.0
+    incremental_roas_sum = 0.0
+    c_count = 0
+    budget_opp = 0.0
+    
+    for name in campaign_names:
+        dim = get_campaign_diminishing_returns(db, account_id, name)
+        if dim["status"] == "Diminishing returns":
+            dim_status = "Warning"
+        marginal_cpa_sum += dim["marginal_cpa"]
+        incremental_roas_sum += dim["incremental_roas"]
+        c_count += 1
+        
+        # Calculate budget opportunity (shifts recommended from wasteful/saturated to efficient)
+        diff = dim["recommended_spend"] - dim["current_spend"]
+        if diff > 0:
+            budget_opp += diff
+
+    avg_marginal_cpa = marginal_cpa_sum / c_count if c_count > 0 else 0.0
+    avg_incr_roas = incremental_roas_sum / c_count if c_count > 0 else 0.0
+
+    return SemSummaryResponse(
+        estimated_cpi=round(overall_cpi, 2),
+        estimated_value=round(overall_value, 2),
+        marginal_cpa=round(avg_marginal_cpa, 2),
+        incremental_roas=round(avg_incr_roas, 2),
+        diminishing_return_status=dim_status,
+        wasted_spend=round(wasted, 2),
+        estimated_savings=round(savings, 2),
+        budget_opportunity=round(budget_opp, 2)
+    )
+
+@router.get("/sem/diminishing-returns", response_model=List[SemCampaignDiminishingReturns])
+def get_sem_diminishing_returns_api(db: Session = Depends(get_db)):
+    account_id = get_default_account_id(db)
+    records = db.query(CampaignPerformance).filter(CampaignPerformance.account_id == account_id).all()
+    if not records:
+        return []
+    campaign_names = list(set(r.campaign_name for r in records))
+    return [get_campaign_diminishing_returns(db, account_id, name) for name in campaign_names]
+
+@router.post("/sem/incremental-budget", response_model=SemIncrementalBudgetResponse)
+def post_sem_incremental_budget(req: SemIncrementalBudgetRequest, db: Session = Depends(get_db)):
+    account_id = get_default_account_id(db)
+    return allocate_incremental_budget(
+        db, account_id, req.additional_budget, req.selected_campaigns, req.objective or "estimated_value"
+    )
+
+@router.get("/sem/sqr", response_model=SemSqrResponse)
+def get_sem_sqr_api(db: Session = Depends(get_db)):
+    account_id = get_default_account_id(db)
+    return analyze_sqr(db, account_id)
+
+@router.get("/sem/negative-keywords", response_model=SemNegativeKeywordsResponse)
+def get_sem_neg_keywords_api(db: Session = Depends(get_db)):
+    account_id = get_default_account_id(db)
+    return get_negative_keyword_recommendations(db, account_id)
+
+@router.get("/sem/bid-recommendations", response_model=List[SemBidRecommendation])
+def get_sem_bid_recs_api(db: Session = Depends(get_db)):
+    account_id = get_default_account_id(db)
+    return generate_bid_recommendations(db, account_id)
+
+@router.get("/sem/impression-share", response_model=SemImpressionShareResponse)
+def get_sem_impression_share_api(db: Session = Depends(get_db)):
+    account_id = get_default_account_id(db)
+    return analyze_impression_share(db, account_id)
+
+@router.post("/sem/portfolio-optimize", response_model=SemPortfolioOptimizeResponse)
+def post_sem_portfolio_optimize(req: SemPortfolioOptimizeRequest, db: Session = Depends(get_db)):
+    account_id = get_default_account_id(db)
+    return optimize_portfolio_budget(db, account_id, req.total_budget, req.objective or "estimated_value")
+
+@router.get("/sem/campaign-efficiency", response_model=List[SemCampaignEfficiency])
+def get_sem_campaign_efficiency_api(db: Session = Depends(get_db)):
+    account_id = get_default_account_id(db)
+    records = db.query(CampaignPerformance).filter(CampaignPerformance.account_id == account_id).all()
+    if not records:
+        return []
+        
+    # Group by campaign
+    campaign_records = {}
+    for r in records:
+        if r.campaign_name not in campaign_records:
+            campaign_records[r.campaign_name] = []
+        campaign_records[r.campaign_name].append(r)
+        
+    results = []
+    for name, list_r in campaign_records.items():
+        latest = sorted(list_r, key=lambda x: x.date)[-1]
+        
+        # Diminishing returns info
+        dim = get_campaign_diminishing_returns(db, account_id, name)
+        
+        # Economical checks
+        cost = latest.cost
+        installs = latest.installs if latest.installs is not None else latest.conversions
+        cpi = calculate_cpi(cost, installs)
+        
+        c_val = latest.conversion_value if (latest.conversion_value is not None) else (latest.revenue / latest.conversions if latest.conversions > 0 else 50.0)
+        ltv = latest.estimated_ltv if (latest.estimated_ltv is not None) else c_val
+        est_val = latest.conversions * ltv
+        
+        label = calculate_spend_efficiency(
+            cost=latest.cost,
+            conversions=latest.conversions,
+            roas=latest.roas,
+            cpa=latest.cpa,
+            target_roas=latest.target_roas,
+            target_cpa=latest.target_cpa,
+            saturation_score=dim["saturation_score"]
+        )
+        
+        results.append(SemCampaignEfficiency(
+            campaign_name=name,
+            channel=latest.channel,
+            cpi=round(cpi, 2),
+            estimated_value=round(est_val, 2),
+            marginal_cpa=dim["marginal_cpa"],
+            incremental_roas=dim["incremental_roas"],
+            diminishing_return_point=dim["diminishing_return_point"],
+            efficiency_label=label
+        ))
+        
+    return results

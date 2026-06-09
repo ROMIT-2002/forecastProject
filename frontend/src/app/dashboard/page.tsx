@@ -19,6 +19,17 @@ interface SummaryData {
   roas: number;
 }
 
+interface SemSummaryData {
+  estimated_cpi: number;
+  estimated_value: number;
+  marginal_cpa: number;
+  incremental_roas: number;
+  diminishing_return_status: string;
+  wasted_spend: number;
+  estimated_savings: number;
+  budget_opportunity: number;
+}
+
 export default function Dashboard() {
   const [summary, setSummary] = useState<SummaryData>({
     total_spend: 24500.50,
@@ -30,6 +41,17 @@ export default function Dashboard() {
     cvr: 0.052,
     cpa: 25.79,
     roas: 1.97
+  });
+
+  const [semSummary, setSemSummary] = useState<SemSummaryData>({
+    estimated_cpi: 8.50,
+    estimated_value: 142500.00,
+    marginal_cpa: 35.20,
+    incremental_roas: 1.85,
+    diminishing_return_status: "Healthy",
+    wasted_spend: 340.00,
+    estimated_savings: 289.00,
+    budget_opportunity: 1200.00
   });
 
   const [campaigns, setCampaigns] = useState<any[]>([
@@ -67,6 +89,18 @@ export default function Dashboard() {
       }
     };
 
+    const fetchSemSummary = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/sem/summary`);
+        if (res.ok) {
+          const data = await res.json();
+          setSemSummary(data);
+        }
+      } catch (err) {
+        console.log("Using local mock data for SEM summary.");
+      }
+    };
+
     const fetchCampaigns = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/campaigns`);
@@ -80,6 +114,7 @@ export default function Dashboard() {
     };
 
     fetchSummary();
+    fetchSemSummary();
     fetchCampaigns();
   }, []);
 
@@ -158,8 +193,8 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* KPI Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* KPI Cards Grid Row 1 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <div className="apple-card p-6">
             <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Total Spend</span>
             <div className="mt-2 text-2xl font-bold tracking-tight text-[#1d1d1f]">
@@ -190,6 +225,93 @@ export default function Dashboard() {
               ${summary.cpa.toFixed(2)}
             </div>
             <p className="mt-1 text-xs text-[#86868b]">Average CPA baseline</p>
+          </div>
+        </div>
+
+        {/* SEM Intelligence Cards Grid Row 2 */}
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[#86868b] mb-4">SEM Intelligence Layer</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="apple-card p-6 border-l-4 border-l-blue-400">
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Estimated CPI</span>
+            <div className="mt-2 text-2xl font-bold tracking-tight text-[#1d1d1f]">
+              ${semSummary.estimated_cpi.toFixed(2)}
+            </div>
+            <p className="mt-1 text-xs text-[#86868b]">Cost Per Install</p>
+          </div>
+
+          <div className="apple-card p-6 border-l-4 border-l-emerald-400">
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Estimated Value</span>
+            <div className="mt-2 text-2xl font-bold tracking-tight text-[#1d1d1f]">
+              ${semSummary.estimated_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <p className="mt-1 text-xs text-[#86868b]">Conversions × LTV</p>
+          </div>
+
+          <div className="apple-card p-6 border-l-4 border-l-purple-400">
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Incremental ROAS</span>
+            <div className="mt-2 text-2xl font-bold tracking-tight text-apple-green">
+              {semSummary.incremental_roas.toFixed(2)}x
+            </div>
+            <p className="mt-1 text-xs text-[#86868b]">Predicted ROAS on scaling</p>
+          </div>
+
+          <div className="apple-card p-6 border-l-4 border-l-indigo-400">
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Marginal CPA</span>
+            <div className="mt-2 text-2xl font-bold tracking-tight text-[#1d1d1f]">
+              ${semSummary.marginal_cpa.toFixed(2)}
+            </div>
+            <p className="mt-1 text-xs text-[#86868b]">Delta Spend / Delta Convs</p>
+          </div>
+        </div>
+
+        {/* Budget Efficiency and Diminishing Return Status Row 3 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="apple-card p-6 flex items-start justify-between">
+            <div className="space-y-1">
+              <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Budget Efficiency Status</span>
+              <div className="text-lg font-bold text-[#1d1d1f] mt-1">
+                {semSummary.wasted_spend > 0 ? "Potential Waste Detected" : "Highly Optimized Allocation"}
+              </div>
+              <p className="text-xs text-[#6e6e73]">
+                {semSummary.wasted_spend > 0 
+                  ? `Wasted Spend: $${semSummary.wasted_spend.toFixed(2)} | Action recommended.` 
+                  : "Budgets are allocated efficiently across high-ROAS channels."}
+              </p>
+              {semSummary.estimated_savings > 0 && (
+                <p className="text-xs text-apple-green font-semibold">
+                  Estimated Monthly Savings: ${semSummary.estimated_savings.toFixed(2)}
+                </p>
+              )}
+            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+              semSummary.wasted_spend > 0 ? "bg-amber-100 text-apple-orange" : "bg-green-100 text-apple-green"
+            }`}>
+              {semSummary.wasted_spend > 0 ? "Waste Alert" : "Optimal"}
+            </span>
+          </div>
+
+          <div className="apple-card p-6 flex items-start justify-between">
+            <div className="space-y-1">
+              <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Diminishing Return Warning</span>
+              <div className="text-lg font-bold text-[#1d1d1f] mt-1">
+                {semSummary.diminishing_return_status === "Warning" ? "Campaign Saturation Detected" : "Healthy Scaling Room"}
+              </div>
+              <p className="text-xs text-[#6e6e73]">
+                {semSummary.diminishing_return_status === "Warning" 
+                  ? "One or more campaigns have hit the point of diminishing return." 
+                  : "All campaigns operating below their saturation threshold."}
+              </p>
+              {semSummary.budget_opportunity > 0 && (
+                <p className="text-xs text-apple-blue font-semibold">
+                  Scale Opportunity: ${semSummary.budget_opportunity.toFixed(2)}
+                </p>
+              )}
+            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+              semSummary.diminishing_return_status === "Warning" ? "bg-rose-100 text-apple-red animate-pulse" : "bg-emerald-100 text-apple-green"
+            }`}>
+              {semSummary.diminishing_return_status === "Warning" ? "Saturation Warning" : "Healthy"}
+            </span>
           </div>
         </div>
 

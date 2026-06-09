@@ -124,11 +124,11 @@ class TestForecastIQBackend(unittest.TestCase):
 
         # Run forecasts
         forecast_count = run_campaign_forecasts(self.db, account.id, horizon=7)
-        # We forecast cost, conversions, revenue, clicks, cpa, roas (6 metrics) for 7 days = 42 records
-        self.assertEqual(forecast_count, 42)
+        # We forecast cost, conversions, revenue, clicks, installs, cpa, roas, cpi, estimated_value (9 metrics) for 7 days = 63 records
+        self.assertEqual(forecast_count, 63)
         
         forecasts = self.db.query(Forecast).filter(Forecast.account_id == account.id).all()
-        self.assertEqual(len(forecasts), 42)
+        self.assertEqual(len(forecasts), 63)
 
     def test_anomaly_detection(self):
         user = User(email="test@test.com", name="Test User")

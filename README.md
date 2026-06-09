@@ -336,17 +336,45 @@ The backend is verified through an automated Python `unittest` suite checking CS
 Run tests:
 ```bash
 cd backend
-python tests/test_backend.py
-```
-*Output:*
-```
-Ran 6 tests in 0.213s
-OK
+python -m unittest discover -s tests -p "test_*.py"
 ```
 
 ---
 
-## 10. Docker Compose & Deployment Guide
+## 10. SEM Intelligence Layer Upgrades
+
+Our decision engine has been upgraded to a comprehensive SEM optimization command center.
+
+### Core Features Added
+*   **Diminishing Return Curves**: Programmatic power curve fitting ($C = a \times S^b$) mapping conversions and value thresholds per campaign.
+*   **SQR Analytics Audit**: Scans search query logs to find low-intent waste terms and exact match opportunities.
+*   **Negative Keyword Recommendations**: Structuring and prioritizing phrase/exact match negatives, estimating monthly budget savings.
+*   **Iterative Budget Allocation**: Greedy allocation simulator for incremental budget runs.
+*   **Portfolio Optimizer**: Linear/greedy allocation solver under total budget constraints.
+*   **Bid Optimization Proposals**: Analyzes lost rank share to propose CPC bid modifications.
+
+### CSV Fields Specification
+We accept old baseline campaign reports as well as richer SEM CSV logs.
+
+#### Core Fields (Required)
+*   `date`, `campaign_name`, `channel`, `impressions`, `clicks`, `cost`, `conversions`, `revenue`
+
+#### SEM Fields (Optional - auto-resolved with fallbacks if missing)
+*   `search_query`, `keyword`, `match_type`, `installs`, `impression_share`, `lost_is_budget`, `lost_is_rank`, `avg_position`, `top_impression_share`, `absolute_top_impression_share`, `device`, `country`, `campaign_budget`, `monthly_budget`, `target_cpa`, `target_roas`, `target_cpi`, `conversion_value`, `estimated_ltv`, `margin`
+
+### How to Run SEM Performance Audits
+
+1.  **Test SQR and Negative Keywords**:
+    *   Upload `sample-data/sem_intelligence_demo_data.csv` on the Ingestion tab.
+    *   Go to **Recommendations** and click **SQR & Keyword Optimizer** to see flagged queries and exact match suggestions.
+2.  **Test Diminishing Returns**:
+    *   Go to **Forecasting** and scroll to the bottom. Observe interactive spend curves.
+3.  **Test Budget Optimization**:
+    *   Go to **Scenario Simulator** and run either **Incremental Allocator** or **Portfolio Optimizer** budget runs.
+
+---
+
+## 11. Docker Compose & Deployment Guide
 
 ### Dev Multi-Container Run
 To run both backend and frontend containerized, execute from workspace root:

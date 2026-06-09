@@ -154,13 +154,16 @@ def run_campaign_forecasts(db: Session, account_id: int, horizon: int = 30) -> i
             "conversions": r.conversions,
             "revenue": r.revenue,
             "clicks": r.clicks,
-            "impressions": r.impressions
+            "impressions": r.impressions,
+            "installs": r.installs if r.installs is not None else r.conversions,
+            "estimated_ltv": r.estimated_ltv,
+            "conversion_value": r.conversion_value
         })
     df = pd.DataFrame(data)
 
     forecast_objects = []
     campaign_names = df["campaign_name"].unique()
-    metrics_to_forecast = ["cost", "conversions", "revenue", "clicks"]
+    metrics_to_forecast = ["cost", "conversions", "revenue", "clicks", "installs"]
 
     for camp_name in campaign_names:
         camp_df = df[df["campaign_name"] == camp_name].sort_values("date")
@@ -168,6 +171,14 @@ def run_campaign_forecasts(db: Session, account_id: int, horizon: int = 30) -> i
         # We need historical records to build models
         if len(camp_df) < 5:
             continue
+
+        # Get average LTV/conversion value for estimated value calculation
+        if "estimated_ltv" in camp_df.columns and not camp_df["estimated_ltv"].isna().all():
+            ltv = float(camp_df["estimated_ltv"].dropna().iloc[-1])
+        elif "conversion_value" in camp_df.columns and not camp_df["conversion_value"].isna().all():
+            ltv = float(camp_df["conversion_value"].dropna().iloc[-1])
+        else:
+            ltv = 150.0
 
         # Run forecast model for each base metric
         camp_forecasts = {}
@@ -188,6 +199,7 @@ def run_campaign_forecasts(db: Session, account_id: int, horizon: int = 30) -> i
             conv_f = camp_forecasts["conversions"][idx]
             rev_f = camp_forecasts["revenue"][idx]
             clicks_f = camp_forecasts["clicks"][idx]
+            installs_f = camp_forecasts["installs"][idx]
 
             forecast_date = cost_f["date"]
             if hasattr(forecast_date, "date"):
@@ -234,6 +246,16 @@ def run_campaign_forecasts(db: Session, account_id: int, horizon: int = 30) -> i
                 upper_bound=clicks_f["upper_bound"],
                 model_name=clicks_f["model_name"]
             ))
+            forecast_objects.append(Forecast(
+                account_id=account_id,
+                campaign_name=camp_name,
+                forecast_date=forecast_date,
+                metric="installs",
+                predicted_value=installs_f["predicted_value"],
+                lower_bound=installs_f["lower_bound"],
+                upper_bound=installs_f["upper_bound"],
+                model_name=installs_f["model_name"]
+            ))
 
             # Derive and save CPA forecast (CPA = cost / conversions)
             pred_cost = cost_f["predicted_value"]
@@ -270,6 +292,40 @@ def run_campaign_forecasts(db: Session, account_id: int, horizon: int = 30) -> i
                 predicted_value=pred_roas,
                 lower_bound=lower_roas,
                 upper_bound=upper_roas,
+                model_name=cost_f["model_name"]
+            ))
+
+            # Derive and save CPI forecast (CPI = cost / installs)
+            pred_inst = installs_f["predicted_value"]
+            pred_cpi = pred_cost / pred_inst if pred_inst > 0 else 0.0
+            
+            lower_cpi = cost_f["lower_bound"] / installs_f["upper_bound"] if installs_f["upper_bound"] > 0 else 0.0
+            upper_cpi = cost_f["upper_bound"] / installs_f["lower_bound"] if installs_f["lower_bound"] > 0 else pred_cpi * 1.5
+
+            forecast_objects.append(Forecast(
+                account_id=account_id,
+                campaign_name=camp_name,
+                forecast_date=forecast_date,
+                metric="cpi",
+                predicted_value=pred_cpi,
+                lower_bound=lower_cpi,
+                upper_bound=upper_cpi,
+                model_name=cost_f["model_name"]
+            ))
+
+            # Derive and save Estimated Value forecast (Estimated Value = conversions * ltv)
+            pred_val = pred_conv * ltv
+            lower_val = conv_f["lower_bound"] * ltv
+            upper_val = conv_f["upper_bound"] * ltv
+
+            forecast_objects.append(Forecast(
+                account_id=account_id,
+                campaign_name=camp_name,
+                forecast_date=forecast_date,
+                metric="estimated_value",
+                predicted_value=pred_val,
+                lower_bound=lower_val,
+                upper_bound=upper_val,
                 model_name=cost_f["model_name"]
             ))
 
